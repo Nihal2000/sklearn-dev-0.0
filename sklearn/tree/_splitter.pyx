@@ -25,6 +25,9 @@ from libc.stdio cimport scanf
 from libc.string cimport memset
 
 import numpy as np
+from sklearn.svm import SVR
+from sklearn.metrics import mean_squared_error
+clf= SVR(kernel= 'linear')
 cimport numpy as np
 np.import_array()
 
@@ -213,7 +216,7 @@ cdef class Splitter:
         return 0
 
     cdef int node_split(self, double impurity, SplitRecord* split,
-                        SIZE_t* n_constant_features) nogil except -1:
+                        SIZE_t* n_constant_features):
         """Find the best split on node samples[start:end].
 
         This is a placeholder method. The majority of computation will be done
@@ -267,7 +270,7 @@ cdef class BestSplitter(BaseDenseSplitter):
                                self.random_state), self.__getstate__())
 
     cdef int node_split(self, double impurity, SplitRecord* split,
-                        SIZE_t* n_constant_features) nogil except -1:
+                        SIZE_t* n_constant_features):
         """Find the best split on node samples[start:end]
 
         Returns -1 in case of failure to allocate memory (and raise MemoryError)
@@ -289,10 +292,11 @@ cdef class BestSplitter(BaseDenseSplitter):
         cdef UINT32_t* random_state = &self.rand_r_state
 
         cdef SplitRecord best, current
-        cdef double current_proxy_improvement = -INFINITY
-        cdef double best_proxy_improvement = -INFINITY
+        cdef double current_proxy_improvement = +INFINITY
+        cdef double best_proxy_improvement = +INFINITY
 
         cdef SIZE_t islinear = self.islinear
+        #cdef LinearSVR linearSVR= LinearSVR(random_state= 42)
 
         cdef SIZE_t f_i = n_features
         cdef SIZE_t f_j
@@ -313,6 +317,9 @@ cdef class BestSplitter(BaseDenseSplitter):
         cdef DTYPE_t current_feature_value
         cdef SIZE_t partition_end
         cdef SIZE_t india 
+        cdef SIZE_t size_tmp= end - start
+        cdef np.ndarray[dtype=DTYPE_t, ndim=2] x_tmp = np.empty((size_tmp, 1), dtype=np.float32)
+        cdef np.ndarray[dtype=DTYPE_t, ndim=2] y_tmp = np.empty((size_tmp, 1), dtype=np.float32)
 
         _init_split(&best, end)
 
@@ -369,6 +376,11 @@ cdef class BestSplitter(BaseDenseSplitter):
 
                 sort(Xf + start, samples + start, end - start)
 
+                for i in range(0, end - start):
+                    x_tmp[i]= Xf[i]
+                    y_tmp[i]= self.y[samples[i]]
+
+
                 if Xf[end - 1] <= Xf[start] + FEATURE_THRESHOLD:
                     features[f_j], features[n_total_constants] = features[n_total_constants], features[f_j]
 
@@ -410,16 +422,35 @@ cdef class BestSplitter(BaseDenseSplitter):
                                 continue
 
                             if islinear == 0:
-                                printf("\n%lf, %lf, %lf, %d, %d, %d, %lf\n", self.X[samples[start], current.feature], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
-                                #scanf("%d", &india)
-                                current_proxy_improvement = self.criterion.proxy_impurity_improvement()
-                                islinear= 1
+                                if (p - 3 > start) and (p + 3 < end):
+                                    printf("\n%lf, %lf, %lf, %d, %d, %d, %lf   ", self.X[samples[start], current.feature], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
+                                    #scanf("%d", &india)
+
+                                    clf.fit(x_tmp[: p - start], y_tmp[: p - start].ravel())
+                                    y_pred= clf.predict(x_tmp[: p - start])
+                                    print(y_pred)
+                                    current_proxy_improvement= mean_squared_error(y_tmp[: p - start].ravel(), y_pred)
+
+                                    print("error1", current_proxy_improvement)
+
+                                    #if p + 1 != end:  
+                                    print(x_tmp[p - start: end - start].shape)  
+                                    clf.fit(x_tmp[p - start: end - start], y_tmp[p - start: end - start].ravel())
+                                    y_pred= clf.predict(x_tmp[p - start: end - start])
+                                    current_proxy_improvement-= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
+                                    current_proxy_improvement = abs(current_proxy_improvement / 2)
+                                    print("error", current_proxy_improvement)
+                                    #current_proxy_improvement = self.criterion.proxy_impurity_improvement()
+                                    #linearSVR.fit(Xf[p + 1: end - 1], y[samples[p + 1: end - 1]])
+                                    #current_proxy_improvement += linearSVR.score(Xf[start: p], y[samples[start:p]])
+                                    #printf("%lf\n", &current_proxy_improvement)
+
                             else:
                                 printf("%lf, %lf, %lf, %d, %d, %d, %lf\n", Xf[start], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
                                 current_proxy_improvement = self.criterion.proxy_impurity_improvement()
                                 #printf('islinear')
 
-                            if current_proxy_improvement > best_proxy_improvement:
+                            if current_proxy_improvement < best_proxy_improvement:
                                 best_proxy_improvement = current_proxy_improvement
                                 # sum of halves is used to avoid infinite value
                                 current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
@@ -592,7 +623,7 @@ cdef class RandomSplitter(BaseDenseSplitter):
                                  self.random_state), self.__getstate__())
 
     cdef int node_split(self, double impurity, SplitRecord* split,
-                        SIZE_t* n_constant_features) nogil except -1:
+                        SIZE_t* n_constant_features):
         """Find the best random split on node samples[start:end]
 
         Returns -1 in case of failure to allocate memory (and raise MemoryError)
@@ -1110,7 +1141,7 @@ cdef class BestSparseSplitter(BaseSparseSplitter):
                                      self.random_state), self.__getstate__())
 
     cdef int node_split(self, double impurity, SplitRecord* split,
-                        SIZE_t* n_constant_features) nogil except -1:
+                        SIZE_t* n_constant_features):
         """Find the best split on node samples[start:end], using sparse features
 
         Returns -1 in case of failure to allocate memory (and raise MemoryError)
@@ -1340,7 +1371,7 @@ cdef class RandomSparseSplitter(BaseSparseSplitter):
                                        self.random_state), self.__getstate__())
 
     cdef int node_split(self, double impurity, SplitRecord* split,
-                        SIZE_t* n_constant_features) nogil except -1:
+                        SIZE_t* n_constant_features):
         """Find a random split on node samples[start:end], using sparse features
 
         Returns -1 in case of failure to allocate memory (and raise MemoryError)

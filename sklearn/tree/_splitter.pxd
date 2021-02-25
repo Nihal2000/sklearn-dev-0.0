@@ -10,6 +10,7 @@
 # See _splitter.pyx for details.
 
 import numpy as np
+from sklearn.svm import LinearSVR
 cimport numpy as np
 
 from ._criterion cimport Criterion
@@ -39,6 +40,9 @@ cdef class Splitter:
 
     # Internal structures
     cdef public Criterion criterion      # Impurity criterion
+
+    #cdef public LinearSVR linearSVR
+
     cdef public SIZE_t max_features      # Number of features to test
     cdef public SIZE_t min_samples_leaf  # Min samples in a leaf
     cdef public double min_weight_leaf   # Minimum weight in a leaf
@@ -87,7 +91,7 @@ cdef class Splitter:
     cdef int node_split(self,
                         double impurity,   # Impurity of the node
                         SplitRecord* split,
-                        SIZE_t* n_constant_features) nogil except -1
+                        SIZE_t* n_constant_features) 
 
     cdef void node_value(self, double* dest) nogil
 
