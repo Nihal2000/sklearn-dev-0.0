@@ -363,14 +363,15 @@ class BaseDecisionTree(MultiOutputMixin, BaseEstimator, metaclass=ABCMeta):
                                                 min_weight_leaf,
                                                 random_state)
 
+        print(self.isLinear)
         if is_classifier(self):
             self.tree_ = Tree(self.n_features_,
-                              self.n_classes_, self.n_outputs_)
+                              self.n_classes_, self.n_outputs_, self.isLinear)
         else:
             self.tree_ = Tree(self.n_features_,
                               # TODO: tree should't need this in this case
                               np.array([1] * self.n_outputs_, dtype=np.intp),
-                              self.n_outputs_)
+                              self.n_outputs_, self.isLinear)
 
         # Use BestFirst if max_leaf_nodes given; use DepthFirst otherwise
         if max_leaf_nodes < 0:
@@ -379,7 +380,7 @@ class BaseDecisionTree(MultiOutputMixin, BaseEstimator, metaclass=ABCMeta):
                                             min_weight_leaf,
                                             max_depth,
                                             self.min_impurity_decrease,
-                                            min_impurity_split)
+                                            min_impurity_split, self.isLinear)
         else:
             builder = BestFirstTreeBuilder(splitter, min_samples_split,
                                            min_samples_leaf,
@@ -387,7 +388,7 @@ class BaseDecisionTree(MultiOutputMixin, BaseEstimator, metaclass=ABCMeta):
                                            max_depth,
                                            max_leaf_nodes,
                                            self.min_impurity_decrease,
-                                           min_impurity_split)
+                                           min_impurity_split, self.isLinear)
 
         builder.build(self.tree_, X, y, sample_weight)
 

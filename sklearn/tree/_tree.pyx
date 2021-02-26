@@ -124,7 +124,7 @@ cdef class DepthFirstTreeBuilder(TreeBuilder):
     def __cinit__(self, Splitter splitter, SIZE_t min_samples_split,
                   SIZE_t min_samples_leaf, double min_weight_leaf,
                   SIZE_t max_depth, double min_impurity_decrease,
-                  double min_impurity_split):
+                  double min_impurity_split, SIZE_t isLinear):
         self.splitter = splitter
         self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
@@ -132,6 +132,7 @@ cdef class DepthFirstTreeBuilder(TreeBuilder):
         self.max_depth = max_depth
         self.min_impurity_decrease = min_impurity_decrease
         self.min_impurity_split = min_impurity_split
+        self.isLinear= isLinear
 
     cpdef build(self, Tree tree, object X, np.ndarray y,
                 np.ndarray sample_weight=None):
@@ -176,8 +177,6 @@ cdef class DepthFirstTreeBuilder(TreeBuilder):
         cdef double weighted_n_node_samples
         cdef SplitRecord split
         cdef SIZE_t node_id
-
-        cdef SIZE_t islinear = self.islinear
 
         cdef double impurity = INFINITY
         cdef SIZE_t n_constant_features
@@ -225,7 +224,8 @@ cdef class DepthFirstTreeBuilder(TreeBuilder):
 
                 if not is_leaf:
                     with gil:
-                        splitter.node_split(impurity, &split, &n_constant_features)
+                        print("Before call:", self.isLinear)
+                        splitter.node_split(impurity, &split, &n_constant_features, self.isLinear)
                     # If EPSILON=0 in the below comparison, float precision
                     # issues stop splitting, producing trees that are
                     # dissimilar to v0.18
@@ -295,7 +295,7 @@ cdef class BestFirstTreeBuilder(TreeBuilder):
     def __cinit__(self, Splitter splitter, SIZE_t min_samples_split,
                   SIZE_t min_samples_leaf,  min_weight_leaf,
                   SIZE_t max_depth, SIZE_t max_leaf_nodes,
-                  double min_impurity_decrease, double min_impurity_split):
+                  double min_impurity_decrease, double min_impurity_split, SIZE_t isLinear):
         self.splitter = splitter
         self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
@@ -304,6 +304,7 @@ cdef class BestFirstTreeBuilder(TreeBuilder):
         self.max_leaf_nodes = max_leaf_nodes
         self.min_impurity_decrease = min_impurity_decrease
         self.min_impurity_split = min_impurity_split
+        self.isLinear= isLinear
 
     cpdef build(self, Tree tree, object X, np.ndarray y,
                 np.ndarray sample_weight=None):
@@ -449,7 +450,8 @@ cdef class BestFirstTreeBuilder(TreeBuilder):
 
         if not is_leaf:
             with gil:
-                splitter.node_split(impurity, &split, &n_constant_features)
+                print("Before call:", self.isLinear)
+                splitter.node_split(impurity, &split, &n_constant_features, self.isLinear)
             # If EPSILON=0 in the below comparison, float precision issues stop
             # splitting early, producing trees that are dissimilar to v0.18
             is_leaf = (is_leaf or split.pos >= end or
@@ -597,7 +599,7 @@ cdef class Tree:
             return self._get_value_ndarray()[:self.node_count]
 
     def __cinit__(self, int n_features, np.ndarray[SIZE_t, ndim=1] n_classes,
-                  int n_outputs):
+                  int n_outputs, int isLinear):
         """Constructor."""
         # Input/Output layout
         self.n_features = n_features
@@ -618,6 +620,8 @@ cdef class Tree:
         self.capacity = 0
         self.value = NULL
         self.nodes = NULL
+        self.isLinear= isLinear
+        print("Tree:", isLinear, self.isLinear)
 
     def __dealloc__(self):
         """Destructor."""

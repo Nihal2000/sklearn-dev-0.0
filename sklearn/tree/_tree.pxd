@@ -53,7 +53,7 @@ cdef class Tree:
     cdef Node* nodes                     # Array of nodes
     cdef double* value                   # (capacity, n_outputs, max_n_classes) array of values
     cdef SIZE_t value_stride             # = n_outputs * max_n_classes
-    cdef SIZE_t islinear
+    cdef SIZE_t isLinear
 
     # Methods
     cdef SIZE_t _add_node(self, SIZE_t parent, bint is_left, bint is_leaf,
@@ -99,7 +99,7 @@ cdef class TreeBuilder:
     cdef SIZE_t max_depth               # Maximal tree depth
     cdef double min_impurity_split
     cdef double min_impurity_decrease   # Impurity threshold for early stopping
-    cdef SIZE_t islinear
+    cdef SIZE_t isLinear
 
     cpdef build(self, Tree tree, object X, np.ndarray y,
                 np.ndarray sample_weight=*)

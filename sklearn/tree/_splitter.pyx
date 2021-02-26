@@ -216,7 +216,7 @@ cdef class Splitter:
         return 0
 
     cdef int node_split(self, double impurity, SplitRecord* split,
-                        SIZE_t* n_constant_features):
+                        SIZE_t* n_constant_features, SIZE_t isLinear):
         """Find the best split on node samples[start:end].
 
         This is a placeholder method. The majority of computation will be done
@@ -270,13 +270,14 @@ cdef class BestSplitter(BaseDenseSplitter):
                                self.random_state), self.__getstate__())
 
     cdef int node_split(self, double impurity, SplitRecord* split,
-                        SIZE_t* n_constant_features):
+                        SIZE_t* n_constant_features, SIZE_t isLinear):
         """Find the best split on node samples[start:end]
 
         Returns -1 in case of failure to allocate memory (and raise MemoryError)
         or 0 otherwise.
         """
         # Find the best split
+        print("node_split:", isLinear)
         cdef SIZE_t* samples = self.samples
         cdef SIZE_t start = self.start
         cdef SIZE_t end = self.end
@@ -294,8 +295,6 @@ cdef class BestSplitter(BaseDenseSplitter):
         cdef SplitRecord best, current
         cdef double current_proxy_improvement = +INFINITY
         cdef double best_proxy_improvement = +INFINITY
-
-        cdef SIZE_t islinear = self.islinear
         #cdef LinearSVR linearSVR= LinearSVR(random_state= 42)
 
         cdef SIZE_t f_i = n_features
@@ -421,8 +420,10 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     (self.criterion.weighted_n_right < min_weight_leaf)):
                                 continue
 
-                            if islinear == 0:
+                            print(isLinear)
+                            if isLinear == 1:
                                 if (p - 3 > start) and (p + 3 < end):
+                                    print(isLinear)
                                     printf("\n%lf, %lf, %lf, %d, %d, %d, %lf   ", self.X[samples[start], current.feature], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
                                     #scanf("%d", &india)
 
@@ -623,7 +624,7 @@ cdef class RandomSplitter(BaseDenseSplitter):
                                  self.random_state), self.__getstate__())
 
     cdef int node_split(self, double impurity, SplitRecord* split,
-                        SIZE_t* n_constant_features):
+                        SIZE_t* n_constant_features, SIZE_t isLinear):
         """Find the best random split on node samples[start:end]
 
         Returns -1 in case of failure to allocate memory (and raise MemoryError)
@@ -1141,7 +1142,7 @@ cdef class BestSparseSplitter(BaseSparseSplitter):
                                      self.random_state), self.__getstate__())
 
     cdef int node_split(self, double impurity, SplitRecord* split,
-                        SIZE_t* n_constant_features):
+                        SIZE_t* n_constant_features, SIZE_t isLinear):
         """Find the best split on node samples[start:end], using sparse features
 
         Returns -1 in case of failure to allocate memory (and raise MemoryError)
@@ -1371,7 +1372,7 @@ cdef class RandomSparseSplitter(BaseSparseSplitter):
                                        self.random_state), self.__getstate__())
 
     cdef int node_split(self, double impurity, SplitRecord* split,
-                        SIZE_t* n_constant_features):
+                        SIZE_t* n_constant_features, SIZE_t isLinear):
         """Find a random split on node samples[start:end], using sparse features
 
         Returns -1 in case of failure to allocate memory (and raise MemoryError)

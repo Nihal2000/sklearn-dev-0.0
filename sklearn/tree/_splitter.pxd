@@ -63,7 +63,6 @@ cdef class Splitter:
 
     cdef const DOUBLE_t[:, ::1] y
     cdef DOUBLE_t* sample_weight
-    cdef SIZE_t islinear
 
     # The samples vector `samples` is maintained by the Splitter object such
     # that the samples contained in a node are contiguous. With this setting,
@@ -91,7 +90,7 @@ cdef class Splitter:
     cdef int node_split(self,
                         double impurity,   # Impurity of the node
                         SplitRecord* split,
-                        SIZE_t* n_constant_features) 
+                        SIZE_t* n_constant_features, SIZE_t isLinear) 
 
     cdef void node_value(self, double* dest) nogil
 
