@@ -293,8 +293,8 @@ cdef class BestSplitter(BaseDenseSplitter):
         cdef UINT32_t* random_state = &self.rand_r_state
 
         cdef SplitRecord best, current
-        cdef double current_proxy_improvement = +INFINITY
-        cdef double best_proxy_improvement = +INFINITY
+        cdef double current_proxy_improvement = -INFINITY
+        cdef double best_proxy_improvement = -INFINITY
         #cdef LinearSVR linearSVR= LinearSVR(random_state= 42)
 
         cdef SIZE_t f_i = n_features
@@ -331,6 +331,11 @@ cdef class BestSplitter(BaseDenseSplitter):
         # for good splitting) by ancestor nodes and save the information on
         # newly discovered constant features to spare computation on descendant
         # nodes.
+
+        if isLinear == 1:
+            current_proxy_improvement= +INFINITY
+            best_proxy_improvement= +INFINITY
+
         while (f_i > n_total_constants and  # Stop early if remaining features
                                             # are constant
                 (n_visited_features < max_features or
@@ -445,23 +450,37 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     #linearSVR.fit(Xf[p + 1: end - 1], y[samples[p + 1: end - 1]])
                                     #current_proxy_improvement += linearSVR.score(Xf[start: p], y[samples[start:p]])
                                     #printf("%lf\n", &current_proxy_improvement)
+                                    
 
                             else:
-                                printf("%lf, %lf, %lf, %d, %d, %d, %lf\n", Xf[start], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
+                                print("%lf, %lf, %lf, %d, %d, %d, %lf\n", Xf[start], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
                                 current_proxy_improvement = self.criterion.proxy_impurity_improvement()
                                 #printf('islinear')
 
-                            if current_proxy_improvement < best_proxy_improvement:
-                                best_proxy_improvement = current_proxy_improvement
-                                # sum of halves is used to avoid infinite value
-                                current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
+                            if isLinear == 1: 
+                                if current_proxy_improvement < best_proxy_improvement:
+                                    best_proxy_improvement = current_proxy_improvement
+                                    # sum of halves is used to avoid infinite value
+                                    current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
 
-                                if ((current.threshold == Xf[p]) or
-                                    (current.threshold == INFINITY) or
-                                    (current.threshold == -INFINITY)):
-                                    current.threshold = Xf[p - 1]
+                                    if ((current.threshold == Xf[p]) or
+                                        (current.threshold == INFINITY) or
+                                        (current.threshold == -INFINITY)):
+                                        current.threshold = Xf[p - 1]
 
-                                best = current  # copy
+                                    best = current  # copy
+                            else:
+                                if current_proxy_improvement > best_proxy_improvement:
+                                    best_proxy_improvement = current_proxy_improvement
+                                    # sum of halves is used to avoid infinite value
+                                    current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
+
+                                    if ((current.threshold == Xf[p]) or
+                                        (current.threshold == INFINITY) or
+                                        (current.threshold == -INFINITY)):
+                                        current.threshold = Xf[p - 1]
+
+                                    best = current  # copy
 
         # Reorganize into samples[start:best.pos] + samples[best.pos:end]
         if best.pos < end:

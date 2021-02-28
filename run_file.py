@@ -1,10 +1,10 @@
 # python -m pip install --verbose --no-build-isolation --editable .
 
-# import sys
-# import subprocess
+import sys
+import subprocess
 
 # # implement pip as a subprocess:
-# subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--verbose','--no-build-isolation','--editable','.'])
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--verbose','--no-build-isolation','--editable','.'])
 
 from sklearn.tree import DecisionTreeRegressor
 import numpy as np
