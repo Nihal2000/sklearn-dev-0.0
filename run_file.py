@@ -6,7 +6,7 @@ import subprocess
 # # implement pip as a subprocess:
 subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--verbose','--no-build-isolation','--editable','.'])
 
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import LinearDecisionTreeRegressor
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -21,7 +21,7 @@ y = y + np.random.randn(m, 1) / 10
 
 inp2 = 1#int(input("Enter the Depth of the tree:"))
 
-ldtr = DecisionTreeRegressor(max_depth = inp2)
+ldtr = LinearDecisionTreeRegressor(max_depth = inp2)
 ldtr.fit(X,y)
 
 y_pred= ldtr.predict(X)

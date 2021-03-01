@@ -188,6 +188,11 @@ cdef class DepthFirstTreeBuilder(TreeBuilder):
         cdef Stack stack = Stack(INITIAL_STACK_SIZE)
         cdef StackRecord stack_record
 
+        cdef DOUBLE_t coef_
+        cdef DOUBLE_t intercept_
+
+        cdef np.ndarray[dtype=DOUBLE_t, ndim=1] coef_intercept_
+
         with nogil:
             # push root node onto stack
             rc = stack.push(0, n_node_samples, 0, _TREE_UNDEFINED, 0, INFINITY, 0)
@@ -224,8 +229,10 @@ cdef class DepthFirstTreeBuilder(TreeBuilder):
 
                 if not is_leaf:
                     with gil:
-                        print("Before call:", self.isLinear)
-                        splitter.node_split(impurity, &split, &n_constant_features, self.isLinear)
+                        #print("Before call:", self.isLinear)
+                        coef_intercept_= splitter.node_split(impurity, &split, &n_constant_features, self.isLinear)
+                        coef_, intercept_= coef_intercept_[0], coef_intercept_[1]
+                        print("coef", coef_, intercept_ )
                     # If EPSILON=0 in the below comparison, float precision
                     # issues stop splitting, producing trees that are
                     # dissimilar to v0.18
@@ -450,7 +457,7 @@ cdef class BestFirstTreeBuilder(TreeBuilder):
 
         if not is_leaf:
             with gil:
-                print("Before call:", self.isLinear)
+                #print("Before call:", self.isLinear)
                 splitter.node_split(impurity, &split, &n_constant_features, self.isLinear)
             # If EPSILON=0 in the below comparison, float precision issues stop
             # splitting early, producing trees that are dissimilar to v0.18

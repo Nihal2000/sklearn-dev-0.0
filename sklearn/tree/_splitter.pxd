@@ -87,7 +87,7 @@ cdef class Splitter:
     cdef int node_reset(self, SIZE_t start, SIZE_t end,
                         double* weighted_n_node_samples) nogil except -1
 
-    cdef int node_split(self,
+    cdef np.ndarray[dtype=DOUBLE_t, ndim=1] node_split(self,
                         double impurity,   # Impurity of the node
                         SplitRecord* split,
                         SIZE_t* n_constant_features, SIZE_t isLinear) 

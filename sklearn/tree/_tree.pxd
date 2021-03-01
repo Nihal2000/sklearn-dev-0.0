@@ -32,6 +32,8 @@ cdef struct Node:
     DOUBLE_t impurity                    # Impurity of the node (i.e., the value of the criterion)
     SIZE_t n_node_samples                # Number of samples at the node
     DOUBLE_t weighted_n_node_samples     # Weighted number of samples at the node
+    DOUBLE_t coef_
+    DOUBLE_t intercept_
 
 
 cdef class Tree:

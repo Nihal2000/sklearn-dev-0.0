@@ -215,7 +215,7 @@ cdef class Splitter:
         weighted_n_node_samples[0] = self.criterion.weighted_n_node_samples
         return 0
 
-    cdef int node_split(self, double impurity, SplitRecord* split,
+    cdef np.ndarray[dtype=DOUBLE_t, ndim=1] node_split(self, double impurity, SplitRecord* split,
                         SIZE_t* n_constant_features, SIZE_t isLinear):
         """Find the best split on node samples[start:end].
 
@@ -269,7 +269,7 @@ cdef class BestSplitter(BaseDenseSplitter):
                                self.min_weight_leaf,
                                self.random_state), self.__getstate__())
 
-    cdef int node_split(self, double impurity, SplitRecord* split,
+    cdef np.ndarray[dtype=DOUBLE_t, ndim=1] node_split(self, double impurity, SplitRecord* split,
                         SIZE_t* n_constant_features, SIZE_t isLinear):
         """Find the best split on node samples[start:end]
 
@@ -277,7 +277,6 @@ cdef class BestSplitter(BaseDenseSplitter):
         or 0 otherwise.
         """
         # Find the best split
-        print("node_split:", isLinear)
         cdef SIZE_t* samples = self.samples
         cdef SIZE_t start = self.start
         cdef SIZE_t end = self.end
@@ -319,6 +318,7 @@ cdef class BestSplitter(BaseDenseSplitter):
         cdef SIZE_t size_tmp= end - start
         cdef np.ndarray[dtype=DTYPE_t, ndim=2] x_tmp = np.empty((size_tmp, 1), dtype=np.float32)
         cdef np.ndarray[dtype=DTYPE_t, ndim=2] y_tmp = np.empty((size_tmp, 1), dtype=np.float32)
+        cdef np.ndarray[dtype=DOUBLE_t, ndim=1] coef_intercept_ = np.empty((2,), dtype=np.float64)
 
         _init_split(&best, end)
 
@@ -425,11 +425,11 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     (self.criterion.weighted_n_right < min_weight_leaf)):
                                 continue
 
-                            print(isLinear)
+                            #print(isLinear)
                             if isLinear == 1:
                                 if (p - 3 > start) and (p + 3 < end):
-                                    print(isLinear)
-                                    printf("\n%lf, %lf, %lf, %d, %d, %d, %lf   ", self.X[samples[start], current.feature], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
+                                    #print(isLinear)
+                                    #printf("\n%lf, %lf, %lf, %d, %d, %d, %lf   ", self.X[samples[start], current.feature], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
                                     #scanf("%d", &india)
 
                                     clf.fit(x_tmp[: p - start], y_tmp[: p - start].ravel())
@@ -437,20 +437,19 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     print(y_pred)
                                     current_proxy_improvement= mean_squared_error(y_tmp[: p - start].ravel(), y_pred)
 
-                                    print("error1", current_proxy_improvement)
+                                    #print("error1", current_proxy_improvement)
 
                                     #if p + 1 != end:  
-                                    print(x_tmp[p - start: end - start].shape)  
+                                    #print(x_tmp[p - start: end - start].shape)  
                                     clf.fit(x_tmp[p - start: end - start], y_tmp[p - start: end - start].ravel())
                                     y_pred= clf.predict(x_tmp[p - start: end - start])
                                     current_proxy_improvement-= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
                                     current_proxy_improvement = abs(current_proxy_improvement / 2)
-                                    print("error", current_proxy_improvement)
+                                    #print("error", current_proxy_improvement)
                                     #current_proxy_improvement = self.criterion.proxy_impurity_improvement()
                                     #linearSVR.fit(Xf[p + 1: end - 1], y[samples[p + 1: end - 1]])
                                     #current_proxy_improvement += linearSVR.score(Xf[start: p], y[samples[start:p]])
                                     #printf("%lf\n", &current_proxy_improvement)
-                                    
 
                             else:
                                 print("%lf, %lf, %lf, %d, %d, %d, %lf\n", Xf[start], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
@@ -516,7 +515,18 @@ cdef class BestSplitter(BaseDenseSplitter):
         # Return values
         split[0] = best
         n_constant_features[0] = n_total_constants
-        return 0
+
+        if isLinear == 1:
+            #print("!")
+            for i in range(start, end):
+                x_tmp[i] = self.X[samples[i], best.feature]
+                y_tmp[i]= self.y[samples[i]]
+            #print("2", x_tmp, y_tmp)
+            clf.fit(x_tmp, y_tmp.ravel())
+            #print("3", clf.coef_[0, 0], clf.intercept_[0])
+            coef_intercept_= np.array([clf.coef_[0, 0], clf.intercept_[0]])
+            return coef_intercept_
+        return coef_intercept_
 
 
 # Sort n-element arrays pointed to by Xf and samples, simultaneously,
@@ -642,7 +652,7 @@ cdef class RandomSplitter(BaseDenseSplitter):
                                  self.min_weight_leaf,
                                  self.random_state), self.__getstate__())
 
-    cdef int node_split(self, double impurity, SplitRecord* split,
+    cdef np.ndarray[dtype=DOUBLE_t, ndim=1] node_split(self, double impurity, SplitRecord* split,
                         SIZE_t* n_constant_features, SIZE_t isLinear):
         """Find the best random split on node samples[start:end]
 
@@ -684,6 +694,8 @@ cdef class RandomSplitter(BaseDenseSplitter):
         cdef DTYPE_t min_feature_value
         cdef DTYPE_t max_feature_value
         cdef DTYPE_t current_feature_value
+
+        cdef np.ndarray[dtype=DOUBLE_t, ndim=1] coef_intercept_ = np.empty((2,), dtype=np.float64)
 
         _init_split(&best, end)
 
@@ -828,7 +840,7 @@ cdef class RandomSplitter(BaseDenseSplitter):
         # Return values
         split[0] = best
         n_constant_features[0] = n_total_constants
-        return 0
+        return coef_intercept_
 
 
 cdef class BaseSparseSplitter(Splitter):
@@ -1160,7 +1172,7 @@ cdef class BestSparseSplitter(BaseSparseSplitter):
                                      self.min_weight_leaf,
                                      self.random_state), self.__getstate__())
 
-    cdef int node_split(self, double impurity, SplitRecord* split,
+    cdef np.ndarray[dtype=DOUBLE_t, ndim=1] node_split(self, double impurity, SplitRecord* split,
                         SIZE_t* n_constant_features, SIZE_t isLinear):
         """Find the best split on node samples[start:end], using sparse features
 
@@ -1214,6 +1226,8 @@ cdef class BestSparseSplitter(BaseSparseSplitter):
         # start_negative = start
         cdef SIZE_t start_positive
         cdef SIZE_t end_negative
+
+        cdef np.ndarray[dtype=DOUBLE_t, ndim=1] coef_intercept_ = np.empty((2,), dtype=np.float64)
 
         # Sample up to max_features without replacement using a
         # Fisher-Yates-based algorithm (using the local variables `f_i` and
@@ -1377,7 +1391,7 @@ cdef class BestSparseSplitter(BaseSparseSplitter):
         # Return values
         split[0] = best
         n_constant_features[0] = n_total_constants
-        return 0
+        return coef_intercept_
 
 
 cdef class RandomSparseSplitter(BaseSparseSplitter):
@@ -1390,7 +1404,7 @@ cdef class RandomSparseSplitter(BaseSparseSplitter):
                                        self.min_weight_leaf,
                                        self.random_state), self.__getstate__())
 
-    cdef int node_split(self, double impurity, SplitRecord* split,
+    cdef np.ndarray[dtype=DOUBLE_t, ndim=1] node_split(self, double impurity, SplitRecord* split,
                         SIZE_t* n_constant_features, SIZE_t isLinear):
         """Find a random split on node samples[start:end], using sparse features
 
@@ -1447,6 +1461,8 @@ cdef class RandomSparseSplitter(BaseSparseSplitter):
         # start_negative = start
         cdef SIZE_t start_positive
         cdef SIZE_t end_negative
+
+        cdef np.ndarray[dtype=DOUBLE_t, ndim=1] coef_intercept_ = np.empty((2,), dtype=np.float64)
 
         # Sample up to max_features without replacement using a
         # Fisher-Yates-based algorithm (using the local variables `f_i` and
@@ -1606,4 +1622,4 @@ cdef class RandomSparseSplitter(BaseSparseSplitter):
         # Return values
         split[0] = best
         n_constant_features[0] = n_total_constants
-        return 0
+        return coef_intercept_
