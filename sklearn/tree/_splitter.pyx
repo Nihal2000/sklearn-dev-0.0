@@ -433,10 +433,10 @@ cdef class BestSplitter(BaseDenseSplitter):
 
                                     clf.fit(x_tmp[: p - start], y_tmp[: p - start].ravel())
                                     y_pred= clf.predict(x_tmp[: p - start])
-                                    print(y_pred)
+                                    #print(y_pred)
                                     current_proxy_improvement= mean_squared_error(y_tmp[: p - start].ravel(), y_pred)
 
-                                    #print("error1", current_proxy_improvement)
+                                    #print(x_tmp[: p - start], y_tmp[: p - start].ravel())
 
                                     #if p + 1 != end:  
                                     #print(x_tmp[p - start: end - start].shape)  
@@ -444,7 +444,8 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     y_pred= clf.predict(x_tmp[p - start: end - start])
                                     current_proxy_improvement-= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
                                     current_proxy_improvement = abs(current_proxy_improvement / 2)
-                                    #print("error", current_proxy_improvement)
+                                    #print(x_tmp[p - start: end - start])
+                                    print("error ", p,  current_proxy_improvement)
                                     #current_proxy_improvement = self.criterion.proxy_impurity_improvement()
                                     #linearSVR.fit(Xf[p + 1: end - 1], y[samples[p + 1: end - 1]])
                                     #current_proxy_improvement += linearSVR.score(Xf[start: p], y[samples[start:p]])

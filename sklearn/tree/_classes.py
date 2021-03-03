@@ -2045,3 +2045,9 @@ class LinearDecisionTreeRegressor(RegressorMixin, BaseDecisionTree):
         self.tree_.compute_partial_dependence(
             grid, target_features, averaged_predictions)
         return averaged_predictions
+
+    def linear_path(self, X):
+        print("Begin")
+        self.tree_.linear_path(X)
+        print("End")
+        return

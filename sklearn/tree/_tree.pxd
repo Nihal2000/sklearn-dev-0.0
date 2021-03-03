@@ -80,6 +80,8 @@ cdef class Tree:
 
     cpdef compute_feature_importances(self, normalize=*)
 
+    cpdef linear_path(self, X)
+
 
 # =============================================================================
 # Tree builder
