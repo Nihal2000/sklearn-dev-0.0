@@ -2046,8 +2046,8 @@ class LinearDecisionTreeRegressor(RegressorMixin, BaseDecisionTree):
             grid, target_features, averaged_predictions)
         return averaged_predictions
 
-    def linear_path(self, X):
+    def linear_path(self, X, y):
         print("Begin")
-        self.tree_.linear_path(X)
-        print("End")
+        parent_child= self.tree_._apply_linear(X, y)
+        print(parent_child)
         return

@@ -25,9 +25,9 @@ from libc.stdio cimport scanf
 from libc.string cimport memset
 
 import numpy as np
-from sklearn.svm import SVR
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
-clf= SVR(kernel= 'linear')
+clf= LinearRegression()
 cimport numpy as np
 np.import_array()
 

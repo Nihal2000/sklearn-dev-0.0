@@ -19,15 +19,22 @@ X = np.random.rand(m, 1)
 y = 4 * (X - 0.5) ** 2
 y = y + np.random.randn(m, 1) / 10
 
-inp2 = 1#int(input("Enter the Depth of the tree:"))
+inp2 = 4#int(input("Enter the Depth of the tree:"))
+print(X.shape)
 
 ldtr = LinearDecisionTreeRegressor(max_depth = inp2)
 ldtr.fit(X,y)
 
-ldtr.linear_path(X)
+ldtr.linear_path(X, y)
+y_pred= ldtr.predict(X)
 
-#print(X[:10], y[:10])
+print(np.unique(y_pred))
+
+print()
+indices= X[:] < 0.1
+print(X[indices], y[indices])
+
 
 plt.scatter(X, y)
-#plt.scatter(X, y_pred)
+plt.scatter(X, y_pred)
 plt.show()

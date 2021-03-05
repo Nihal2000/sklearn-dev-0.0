@@ -80,7 +80,8 @@ cdef class Tree:
 
     cpdef compute_feature_importances(self, normalize=*)
 
-    cpdef linear_path(self, X)
+    cpdef child_parent_dict(self)
+    cpdef _apply_linear(self, X, y)
 
 
 # =============================================================================

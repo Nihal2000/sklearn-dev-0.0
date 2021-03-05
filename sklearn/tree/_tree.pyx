@@ -27,6 +27,8 @@ from libc.stdint cimport SIZE_MAX
 import numpy as np
 cimport numpy as np
 np.import_array()
+from sklearn.linear_model import LinearRegression
+clf= LinearRegression()
 
 from scipy.sparse import issparse
 from scipy.sparse import csc_matrix
@@ -1235,32 +1237,64 @@ cdef class Tree:
                 raise ValueError("Total weight should be 1.0 but was %.9f" %
                                  total_weight)
 
-    cpdef linear_path(self, X):
-        if not isinstance(X, np.ndarray):
-            raise ValueError()
-
+    cpdef child_parent_dict(self):
+        child_parent= dict()
         cdef Node* node = NULL
-        
-
         linearstack= []
         node_id= 0
         node= &self.nodes[node_id]
         while True:
             while node_id != -1:
                 linearstack.append(node_id)
+                if node.left_child != -1:
+                    temp_node_id= node.left_child
+                    child_parent[temp_node_id]= node_id
+                if node.right_child != -1:
+                    temp_node_id= node.right_child
+                    child_parent[temp_node_id]= node_id
                 node_id= node.left_child
                 node= &self.nodes[node_id]
             if len(linearstack) == 0:
-                print("return")
-                return 
+                #print("return")
+                return child_parent
             node_id= linearstack[len(linearstack) - 1]
             node= &self.nodes[node_id]
             linearstack.pop(len(linearstack) - 1)
-            print("impurity:", node.feature)
+            #print("impurity:", node.feature)
             node_id= node.right_child
             node= &self.nodes[node_id]
-        return
+        return child_parent
 
+    cpdef _apply_linear(self, X, y):
+        
+        
+        cdef Node* node= NULL
+        child_parent= self.child_parent_dict()
+
+        node_count= self.node_count
+        for node_id in range(node_count):
+            is_left= False
+            node= &self.nodes[node_id]
+            if node.left_child == -1:
+                parent= child_parent[node_id]
+                feature= self.nodes[parent].feature
+                threshold= self.nodes[parent].threshold
+                if self.nodes[parent].left_child == node_id:
+                    is_left = True
+
+                if is_left:
+                    tmp_indices= X[:, feature] < threshold
+                else:
+                    tmp_indices= X[:, feature] >= threshold
+
+                x_tmp, y_tmp= X[tmp_indices], y[tmp_indices]
+                print(y_tmp)
+                clf.fit(x_tmp, y_tmp.ravel())
+                coef_, intercept_= clf.coef_[0], clf.intercept_
+                node.coef_= coef_
+                node.intercept_= intercept_
+                print(parent, feature, threshold, node_id, is_left, node.coef_, node.intercept_)
+        return child_parent
 
 
 
