@@ -1283,18 +1283,44 @@ cdef class Tree:
                     is_left = True
 
                 if is_left:
-                    tmp_indices= X[:, feature] < threshold
+                    tmp_indices= X[:, feature] <= threshold
                 else:
-                    tmp_indices= X[:, feature] >= threshold
+                    tmp_indices= X[:, feature] > threshold
 
                 x_tmp, y_tmp= X[tmp_indices], y[tmp_indices]
-                print(y_tmp)
+                #print(y_tmp)
                 clf.fit(x_tmp, y_tmp.ravel())
                 coef_, intercept_= clf.coef_[0], clf.intercept_
                 node.coef_= coef_
                 node.intercept_= intercept_
                 print(parent, feature, threshold, node_id, is_left, node.coef_, node.intercept_)
         return child_parent
+
+    cpdef linearPredict(self, X):
+        # Check input
+        if not isinstance(X, np.ndarray):
+            raise ValueError("X should be in np.ndarray format, got %s"
+                             % type(X))
+
+        if X.dtype != DTYPE:
+            raise ValueError("X.dtype should be np.float32, got %s" % X.dtype)
+        
+        #predict
+        cdef Node* node= NULL
+        n_samples= X.shape[0]
+        proba= np.zeros((n_samples, ))
+        for i in range(n_samples):
+            node= self.nodes
+            while node.left_child != _TREE_LEAF:
+                feature= node.feature
+                if X[i, node.feature] <= node.threshold:
+                    node= &self.nodes[node.left_child]
+                else:
+                    node= &self.nodes[node.right_child]
+            coef_, intercept_= node.coef_, node.intercept_
+            proba[i]= (coef_ * X[i, feature]) + intercept_
+        return proba
+
 
 
 

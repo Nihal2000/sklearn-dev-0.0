@@ -82,6 +82,7 @@ cdef class Tree:
 
     cpdef child_parent_dict(self)
     cpdef _apply_linear(self, X, y)
+    cpdef linearPredict(self, X)
 
 
 # =============================================================================

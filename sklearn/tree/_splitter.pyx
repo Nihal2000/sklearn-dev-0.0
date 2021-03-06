@@ -445,7 +445,7 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     current_proxy_improvement-= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
                                     current_proxy_improvement = abs(current_proxy_improvement / 2)
                                     #print(x_tmp[p - start: end - start])
-                                    print("error ", p,  current_proxy_improvement)
+                                    print(current.feature, "error ", p,  current_proxy_improvement)
                                     #current_proxy_improvement = self.criterion.proxy_impurity_improvement()
                                     #linearSVR.fit(Xf[p + 1: end - 1], y[samples[p + 1: end - 1]])
                                     #current_proxy_improvement += linearSVR.score(Xf[start: p], y[samples[start:p]])
@@ -502,6 +502,8 @@ cdef class BestSplitter(BaseDenseSplitter):
             best.improvement = self.criterion.impurity_improvement(
                 impurity, best.impurity_left, best.impurity_right)
 
+        print(best.feature, best.pos)
+        
         # Respect invariant for constant features: the original order of
         # element in features[:n_known_constants] must be preserved for sibling
         # and child nodes

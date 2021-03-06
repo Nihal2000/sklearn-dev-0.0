@@ -439,6 +439,11 @@ class BaseDecisionTree(MultiOutputMixin, BaseEstimator, metaclass=ABCMeta):
         """
         check_is_fitted(self)
         X = self._validate_X_predict(X, check_input)
+
+        if self.isLinear:
+            proba= self.tree_.linearPredict(X)
+            return proba
+        
         proba = self.tree_.predict(X)
         n_samples = X.shape[0]
 
@@ -2019,6 +2024,8 @@ class LinearDecisionTreeRegressor(RegressorMixin, BaseDecisionTree):
             sample_weight=sample_weight,
             check_input=check_input,
             X_idx_sorted=X_idx_sorted)
+        parent_child= self.tree_._apply_linear(X, y)
+        print(parent_child)
         return self
 
     def _compute_partial_dependence_recursion(self, grid, target_features):
