@@ -28,8 +28,8 @@ import numpy as np
 cimport numpy as np
 np.import_array()
 from sklearn.linear_model import LinearRegression
-clf= LinearRegression(normalize= True, n_jobs= -1)
-from sklearn.svm import LinearSVR
+clf= LinearRegression(n_jobs= -1)
+#from sklearn.svm import LinearSVR
 #clf= LinearSVR()
 #from sklearn.svm import SVR
 #clf= SVR(kernel= 'linear')
