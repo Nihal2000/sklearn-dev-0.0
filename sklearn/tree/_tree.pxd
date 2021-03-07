@@ -81,7 +81,7 @@ cdef class Tree:
     cpdef compute_feature_importances(self, normalize=*)
 
     cpdef child_parent_dict(self)
-    cpdef _apply_linear(self, X, y)
+    cpdef _apply_linear(self, X, y, node_id, feature)
     cpdef linearPredict(self, X)
 
 

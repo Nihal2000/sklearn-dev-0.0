@@ -26,8 +26,12 @@ from libc.string cimport memset
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from sklearn.svm import LinearSVR
 from sklearn.metrics import mean_squared_error
-clf= LinearRegression()
+clf= LinearRegression(normalize= True, n_jobs= -1)
+#clf= LinearSVR()
+#from sklearn.svm import SVR
+#clf= SVR(kernel= 'linear')
 cimport numpy as np
 np.import_array()
 
@@ -434,7 +438,7 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     clf.fit(x_tmp[: p - start], y_tmp[: p - start].ravel())
                                     y_pred= clf.predict(x_tmp[: p - start])
                                     #print(y_pred)
-                                    current_proxy_improvement= mean_squared_error(y_tmp[: p - start].ravel(), y_pred)
+                                    error_left= mean_squared_error(y_tmp[: p - start].ravel(), y_pred)
 
                                     #print(x_tmp[: p - start], y_tmp[: p - start].ravel())
 
@@ -442,18 +446,20 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     #print(x_tmp[p - start: end - start].shape)  
                                     clf.fit(x_tmp[p - start: end - start], y_tmp[p - start: end - start].ravel())
                                     y_pred= clf.predict(x_tmp[p - start: end - start])
-                                    current_proxy_improvement-= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
-                                    current_proxy_improvement = abs(current_proxy_improvement / 2)
+                                    error_right= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
+                                    error_dif= abs(error_left - error_right)
+                                    total_error = error_left + error_right
+                                    current_proxy_improvement = (1.0 * total_error) + (0.0 * error_dif)
                                     #print(x_tmp[p - start: end - start])
-                                    print(current.feature, "error ", p,  current_proxy_improvement)
+                                    #print(current.feature, "error ", p,  current_proxy_improvement)
                                     #current_proxy_improvement = self.criterion.proxy_impurity_improvement()
                                     #linearSVR.fit(Xf[p + 1: end - 1], y[samples[p + 1: end - 1]])
                                     #current_proxy_improvement += linearSVR.score(Xf[start: p], y[samples[start:p]])
                                     #printf("%lf\n", &current_proxy_improvement)
 
                             else:
-                                print("%lf, %lf, %lf, %d, %d, %d, %lf\n", Xf[start], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
                                 current_proxy_improvement = self.criterion.proxy_impurity_improvement()
+                                #print(current.feature, "error ", p,  current_proxy_improvement)
                                 #printf('islinear')
 
                             if isLinear == 1: 

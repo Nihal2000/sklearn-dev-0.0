@@ -2024,7 +2024,7 @@ class LinearDecisionTreeRegressor(RegressorMixin, BaseDecisionTree):
             sample_weight=sample_weight,
             check_input=check_input,
             X_idx_sorted=X_idx_sorted)
-        parent_child= self.tree_._apply_linear(X, y)
+        parent_child= self.tree_._apply_linear(X, y, 0, 0)
         print(parent_child)
         return self
 
