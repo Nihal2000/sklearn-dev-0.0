@@ -26,7 +26,11 @@ from libc.string cimport memset
 
 import numpy as np
 from sklearn.linear_model import Lasso
+<<<<<<< HEAD
 #from sklearn.svm import LinearSVR
+=======
+from sklearn.svm import LinearSVR
+>>>>>>> 4f193b4b74375d0ca6905ec7c6c44e82f663cfd7
 from sklearn.metrics import mean_squared_error
 clf= Lasso()
 #clf= LinearSVR()
@@ -449,7 +453,9 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     error_right= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
                                     error_dif= abs(error_left - error_right)
                                     total_error = error_left + error_right
-                                    current_proxy_improvement = (0.3 * total_error) + (0.7 * error_dif)
+                                    current_proxy_improvement= self.criterion.proxy_impurity_improvement()
+                                    print(current_proxy_improvement)
+                                    current_proxy_improvement = (0.5 * current_proxy_improvement)) + (0.5 * error_dif)
                                     #print(x_tmp[p - start: end - start])
                                     #print(current.feature, "error ", p,  current_proxy_improvement)
                                     #current_proxy_improvement = self.criterion.proxy_impurity_improvement()
