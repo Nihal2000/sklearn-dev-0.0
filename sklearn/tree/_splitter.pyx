@@ -25,14 +25,10 @@ from libc.stdio cimport scanf
 from libc.string cimport memset
 
 import numpy as np
-from sklearn.linear_model import Lasso
-<<<<<<< HEAD
+from sklearn.linear_model import LinearRegression
 #from sklearn.svm import LinearSVR
-=======
-from sklearn.svm import LinearSVR
->>>>>>> 4f193b4b74375d0ca6905ec7c6c44e82f663cfd7
 from sklearn.metrics import mean_squared_error
-clf= Lasso()
+clf= LinearRegression(n_jobs= -1)
 #clf= LinearSVR()
 #from sklearn.svm import SVR
 #clf= SVR(kernel= 'linear')
@@ -326,6 +322,7 @@ cdef class BestSplitter(BaseDenseSplitter):
         cdef SIZE_t size_tmp= end - start
         cdef np.ndarray[dtype=DTYPE_t, ndim=2] x_tmp = np.empty((size_tmp, 1), dtype=np.float32)
         cdef np.ndarray[dtype=DTYPE_t, ndim=2] y_tmp = np.empty((size_tmp, 1), dtype=np.float32)
+        cdef SplitRecord linearBest
 
         _init_split(&best, end)
 
@@ -340,8 +337,12 @@ cdef class BestSplitter(BaseDenseSplitter):
         # nodes.
 
         if isLinear == 1:
-            current_proxy_improvement= +INFINITY
-            best_proxy_improvement= +INFINITY
+            current_total_error= +INFINITY
+            best_total_error= +INFINITY
+            decision_best_total_error= +INFINITY
+            current_error_dif= +INFINITY
+            best_error_dif= +INFINITY
+            
 
         while (f_i > n_total_constants and  # Stop early if remaining features
                                             # are constant
@@ -451,26 +452,20 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     clf.fit(x_tmp[p - start: end - start], y_tmp[p - start: end - start].ravel())
                                     y_pred= clf.predict(x_tmp[p - start: end - start])
                                     error_right= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
-                                    error_dif= abs(error_left - error_right)
-                                    total_error = error_left + error_right
-                                    current_proxy_improvement= self.criterion.proxy_impurity_improvement()
-                                    print(current_proxy_improvement)
-                                    current_proxy_improvement = (0.5 * current_proxy_improvement)) + (0.5 * error_dif)
-                                    #print(x_tmp[p - start: end - start])
-                                    #print(current.feature, "error ", p,  current_proxy_improvement)
-                                    #current_proxy_improvement = self.criterion.proxy_impurity_improvement()
-                                    #linearSVR.fit(Xf[p + 1: end - 1], y[samples[p + 1: end - 1]])
-                                    #current_proxy_improvement += linearSVR.score(Xf[start: p], y[samples[start:p]])
-                                    #printf("%lf\n", &current_proxy_improvement)
-
+                                    current_error_dif= abs(error_left - error_right)
+                                    current_total_error = error_left + error_right
+                                    current_proxy_improvement= 0.9 * self.criterion.proxy_impurity_improvement()
+                                    #print(current_proxy_improvement, total_error, error_dif)
+                                    #current_proxy_improvement = 0.2 * current_proxy_improvement 
                             else:
                                 current_proxy_improvement = self.criterion.proxy_impurity_improvement()
                                 #print(current.feature, "error ", p,  current_proxy_improvement)
                                 #printf('islinear')
 
                             if isLinear == 1: 
-                                if current_proxy_improvement < best_proxy_improvement:
+                                if current_proxy_improvement > best_proxy_improvement:
                                     best_proxy_improvement = current_proxy_improvement
+                                    decision_best_total_error= current_total_error
                                     # sum of halves is used to avoid infinite value
                                     current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
 
@@ -480,6 +475,19 @@ cdef class BestSplitter(BaseDenseSplitter):
                                         current.threshold = Xf[p - 1]
 
                                     best = current  # copy
+                                
+                                if current_error_dif < best_error_dif:
+                                    best_total_error = current_total_error
+                                    best_error_dif = current_error_dif
+                                    # sum of halves is used to avoid infinite value
+                                    current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
+
+                                    if ((current.threshold == Xf[p]) or
+                                        (current.threshold == INFINITY) or
+                                        (current.threshold == -INFINITY)):
+                                        current.threshold = Xf[p - 1]
+
+                                    linearBest = current  # copy
                             else:
                                 if current_proxy_improvement > best_proxy_improvement:
                                     best_proxy_improvement = current_proxy_improvement
@@ -493,6 +501,11 @@ cdef class BestSplitter(BaseDenseSplitter):
 
                                     best = current  # copy
 
+                if isLinear == 1:
+                    if best_total_error < decision_best_total_error:
+                        print("linear Best")
+                        best= linearBest
+                    print(best_total_error, decision_best_total_error)
         # Reorganize into samples[start:best.pos] + samples[best.pos:end]
         if best.pos < end:
             partition_end = end
