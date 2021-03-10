@@ -627,7 +627,6 @@ cdef class Tree:
         self.value = NULL
         self.nodes = NULL
         self.isLinear= isLinear
-        print("Tree:", isLinear, self.isLinear)
 
     def __dealloc__(self):
         """Destructor."""
@@ -1269,36 +1268,6 @@ cdef class Tree:
             node= &self.nodes[node_id]
         return child_parent
 
-    # cpdef _apply_linear(self, X, y):
-        
-        
-    #     cdef Node* node= NULL
-    #     child_parent= self.child_parent_dict()
-
-    #     node_count= self.node_count
-    #     for node_id in range(node_count):
-    #         is_left= False
-    #         node= &self.nodes[node_id]
-    #         if node.left_child == -1:
-    #             parent= child_parent[node_id]
-    #             feature= self.nodes[parent].feature
-    #             threshold= self.nodes[parent].threshold
-    #             if self.nodes[parent].left_child == node_id:
-    #                 is_left = True
-
-    #             if is_left:
-    #                 tmp_indices= X[:, feature] <= threshold
-    #             else:
-    #                 tmp_indices= X[:, feature] > threshold
-
-    #             x_tmp, y_tmp= X[tmp_indices], y[tmp_indices]
-    #             #print(y_tmp)
-    #             clf.fit(x_tmp, y_tmp.ravel())
-    #             coef_, intercept_= clf.coef_[0], clf.intercept_
-    #             node.coef_= coef_
-    #             node.intercept_= intercept_
-    #             print(parent, feature, threshold, node_id, is_left, node.coef_, node.intercept_)
-    #     return child_parent
 
     cpdef _apply_linear(self, X, y, node_id, feature):
         cdef Node* node= &self.nodes[node_id]
@@ -1307,16 +1276,16 @@ cdef class Tree:
             coef_, intercept_= clf.coef_[0], clf.intercept_
             node.coef_= coef_
             node.intercept_= intercept_
-            print(feature, node_id, node.coef_, node.intercept_)
+            #print(feature, node_id, node.coef_, node.intercept_)
             return
         tmp_indices= X[:, node.feature] <= node.threshold
         x_tmp, y_tmp= X[tmp_indices], y[tmp_indices]
-        print(x_tmp.shape, y_tmp.shape)
+        #print(x_tmp.shape, y_tmp.shape)
         self._apply_linear(x_tmp, y_tmp, node.left_child, node.feature)
         tmp_indices= X[:, node.feature] > node.threshold
         x_tmp, y_tmp= X[tmp_indices], y[tmp_indices]
         self._apply_linear(x_tmp, y_tmp, node.right_child, node.feature)
-        return
+        return 0
 
 
     cpdef linearPredict(self, X):
