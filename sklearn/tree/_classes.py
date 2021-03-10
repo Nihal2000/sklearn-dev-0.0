@@ -363,7 +363,7 @@ class BaseDecisionTree(MultiOutputMixin, BaseEstimator, metaclass=ABCMeta):
                                                 min_weight_leaf,
                                                 random_state)
 
-        print(self.isLinear)
+        #print(self.isLinear)
         if is_classifier(self):
             self.tree_ = Tree(self.n_features_,
                               self.n_classes_, self.n_outputs_, self.isLinear)
@@ -1958,8 +1958,8 @@ class LinearDecisionTreeRegressor(RegressorMixin, BaseDecisionTree):
                  criterion="mse",
                  splitter="best",
                  max_depth=None,
-                 min_samples_split=10,
-                 min_samples_leaf=1,
+                 min_samples_split=12,
+                 min_samples_leaf=6,
                  min_weight_fraction_leaf=0.,
                  max_features=None,
                  random_state=None,
@@ -2018,7 +2018,7 @@ class LinearDecisionTreeRegressor(RegressorMixin, BaseDecisionTree):
         self : DecisionTreeRegressor
             Fitted estimator.
         """
-        print("hello")
+        #print("hello")
         super().fit(
             X, y,
             sample_weight=sample_weight,

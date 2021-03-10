@@ -445,10 +445,9 @@ cdef class BestSplitter(BaseDenseSplitter):
 
                                 current_error_dif= abs(error_left - error_right)
                                 current_total_error= error_left + error_right
-                                current_proxy_improvement = self.criterion.proxy_impurity_improvement()
-                            else:    
-                                current_proxy_improvement = self.criterion.proxy_impurity_improvement()
-
+                            
+                            current_proxy_improvement = self.criterion.proxy_impurity_improvement()
+                            
                             if isLinear == 1: 
                                 if current_proxy_improvement > best_proxy_improvement:
                                     best_proxy_improvement = current_proxy_improvement
@@ -465,7 +464,7 @@ cdef class BestSplitter(BaseDenseSplitter):
                                 
                                 if current_error_dif < best_error_dif:
                                     linear_best_total_error = current_total_error
-                                    best_error_dif = current_total_error
+                                    best_error_dif = current_error_dif
                                     # sum of halves is used to avoid infinite value
                                     current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
 
@@ -492,11 +491,11 @@ cdef class BestSplitter(BaseDenseSplitter):
                     if linear_best_total_error < decision_best_total_error:
                         if linear_best_total_error < best_total_error:
                             best_total_error= linear_best_total_error
-                            print("linear Best", linearBest.pos, linearBest.feature)
+                            #print("linear Best", linearBest.pos, linearBest.feature)
                             best = linearBest
                     else:
                         if decision_best_total_error < best_total_error:
-                            print("Decision Best", decisionBest.pos, decisionBest.feature)
+                            #print("Decision Best", decisionBest.pos, decisionBest.feature)
                             best_total_error= decision_best_total_error
                             best= decisionBest
                     #print(best_total_error, decision_best_total_error, linear_best_total_error)
