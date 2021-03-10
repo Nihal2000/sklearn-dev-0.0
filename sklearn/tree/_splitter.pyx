@@ -20,15 +20,13 @@ from ._criterion cimport Criterion
 from libc.stdlib cimport free
 from libc.stdlib cimport qsort
 from libc.string cimport memcpy
-from libc.stdio cimport printf
-from libc.stdio cimport scanf
 from libc.string cimport memset
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
 #from sklearn.svm import LinearSVR
 from sklearn.metrics import mean_squared_error
-clf= LinearRegression(n_jobs= -1)
+clf= LinearRegression(n_jobs= -1, normalize= True)
 #clf= LinearSVR()
 #from sklearn.svm import SVR
 #clf= SVR(kernel= 'linear')
@@ -322,7 +320,7 @@ cdef class BestSplitter(BaseDenseSplitter):
         cdef SIZE_t size_tmp= end - start
         cdef np.ndarray[dtype=DTYPE_t, ndim=2] x_tmp = np.empty((size_tmp, 1), dtype=np.float32)
         cdef np.ndarray[dtype=DTYPE_t, ndim=2] y_tmp = np.empty((size_tmp, 1), dtype=np.float32)
-        cdef SplitRecord linearBest
+        cdef SplitRecord linearBest, decisionBest
 
         _init_split(&best, end)
 
@@ -342,6 +340,7 @@ cdef class BestSplitter(BaseDenseSplitter):
             decision_best_total_error= +INFINITY
             current_error_dif= +INFINITY
             best_error_dif= +INFINITY
+            linear_best_total_error= +INFINITY
             
 
         while (f_i > n_total_constants and  # Stop early if remaining features
@@ -435,37 +434,25 @@ cdef class BestSplitter(BaseDenseSplitter):
 
                             #print(isLinear)
                             if isLinear == 1:
-                                if (p - 3 > start) and (p + 3 < end):
-                                    #print(isLinear)
-                                    #printf("\n%lf, %lf, %lf, %d, %d, %d, %lf   ", self.X[samples[start], current.feature], Xf[p], Xf[end - 1], start, p, end, self.y[samples[p], current.feature])
-                                    #scanf("%d", &india)
 
-                                    clf.fit(x_tmp[: p - start], y_tmp[: p - start].ravel())
-                                    y_pred= clf.predict(x_tmp[: p - start])
-                                    #print(y_pred)
-                                    error_left= mean_squared_error(y_tmp[: p - start].ravel(), y_pred)
+                                clf.fit(x_tmp[: p - start], y_tmp[: p - start].ravel())
+                                y_pred= clf.predict(x_tmp[: p - start])
+                                error_left= mean_squared_error(y_tmp[: p - start].ravel(), y_pred)
 
-                                    #print(x_tmp[: p - start], y_tmp[: p - start].ravel())
+                                clf.fit(x_tmp[p - start: end - start], y_tmp[p - start: end - start].ravel())
+                                y_pred= clf.predict(x_tmp[p - start: end - start])
+                                error_right= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
 
-                                    #if p + 1 != end:  
-                                    #print(x_tmp[p - start: end - start].shape)  
-                                    clf.fit(x_tmp[p - start: end - start], y_tmp[p - start: end - start].ravel())
-                                    y_pred= clf.predict(x_tmp[p - start: end - start])
-                                    error_right= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
-                                    current_error_dif= abs(error_left - error_right)
-                                    current_total_error = error_left + error_right
-                                    current_proxy_improvement= 0.9 * self.criterion.proxy_impurity_improvement()
-                                    #print(current_proxy_improvement, total_error, error_dif)
-                                    #current_proxy_improvement = 0.2 * current_proxy_improvement 
-                            else:
+                                current_error_dif= abs(error_left - error_right)
+                                current_total_error= error_left + error_right
                                 current_proxy_improvement = self.criterion.proxy_impurity_improvement()
-                                #print(current.feature, "error ", p,  current_proxy_improvement)
-                                #printf('islinear')
+                            else:    
+                                current_proxy_improvement = self.criterion.proxy_impurity_improvement()
 
                             if isLinear == 1: 
                                 if current_proxy_improvement > best_proxy_improvement:
                                     best_proxy_improvement = current_proxy_improvement
-                                    decision_best_total_error= current_total_error
+                                    decision_best_total_error = 0.98 * current_total_error
                                     # sum of halves is used to avoid infinite value
                                     current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
 
@@ -474,11 +461,11 @@ cdef class BestSplitter(BaseDenseSplitter):
                                         (current.threshold == -INFINITY)):
                                         current.threshold = Xf[p - 1]
 
-                                    best = current  # copy
+                                    decisionBest = current  # copy
                                 
                                 if current_error_dif < best_error_dif:
-                                    best_total_error = current_total_error
-                                    best_error_dif = current_error_dif
+                                    linear_best_total_error = current_total_error
+                                    best_error_dif = current_total_error
                                     # sum of halves is used to avoid infinite value
                                     current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
 
@@ -502,10 +489,17 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     best = current  # copy
 
                 if isLinear == 1:
-                    if best_total_error < decision_best_total_error:
-                        print("linear Best")
-                        best= linearBest
-                    print(best_total_error, decision_best_total_error)
+                    if linear_best_total_error < decision_best_total_error:
+                        if linear_best_total_error < best_total_error:
+                            best_total_error= linear_best_total_error
+                            print("linear Best", linearBest.pos, linearBest.feature)
+                            best = linearBest
+                    else:
+                        if decision_best_total_error < best_total_error:
+                            print("Decision Best", decisionBest.pos, decisionBest.feature)
+                            best_total_error= decision_best_total_error
+                            best= decisionBest
+                    #print(best_total_error, decision_best_total_error, linear_best_total_error)
         # Reorganize into samples[start:best.pos] + samples[best.pos:end]
         if best.pos < end:
             partition_end = end
@@ -527,7 +521,7 @@ cdef class BestSplitter(BaseDenseSplitter):
             best.improvement = self.criterion.impurity_improvement(
                 impurity, best.impurity_left, best.impurity_right)
 
-        print(best.feature, best.threshold)
+        #print(best.feature, best.pos)
         
         # Respect invariant for constant features: the original order of
         # element in features[:n_known_constants] must be preserved for sibling

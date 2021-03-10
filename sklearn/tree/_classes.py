@@ -1958,7 +1958,7 @@ class LinearDecisionTreeRegressor(RegressorMixin, BaseDecisionTree):
                  criterion="mse",
                  splitter="best",
                  max_depth=None,
-                 min_samples_split=2,
+                 min_samples_split=10,
                  min_samples_leaf=1,
                  min_weight_fraction_leaf=0.,
                  max_features=None,
@@ -2024,8 +2024,7 @@ class LinearDecisionTreeRegressor(RegressorMixin, BaseDecisionTree):
             sample_weight=sample_weight,
             check_input=check_input,
             X_idx_sorted=X_idx_sorted)
-        parent_child= self.tree_._apply_linear(X, y, 0, 0)
-        print(parent_child)
+        self.tree_._apply_linear(X, y, 0, 0)
         return self
 
     def _compute_partial_dependence_recursion(self, grid, target_features):
@@ -2054,7 +2053,7 @@ class LinearDecisionTreeRegressor(RegressorMixin, BaseDecisionTree):
         return averaged_predictions
 
     def linear_path(self, X, y):
-        print("Begin")
-        parent_child= self.tree_._apply_linear(X, y)
-        print(parent_child)
+        #print("Begin")
+        self.tree_._apply_linear(X, y)
+        #print(parent_child)
         return
