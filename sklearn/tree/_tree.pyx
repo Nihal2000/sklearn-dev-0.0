@@ -1272,9 +1272,10 @@ cdef class Tree:
     cpdef _apply_linear(self, X, y, node_id, feature):
         cdef Node* node= &self.nodes[node_id]
         if node.left_child == -1:
-            clf.fit(X[:, feature].reshape(-1, 1), y.ravel())
-            coef_, intercept_= clf.coef_[0], clf.intercept_
-            node.coef_= coef_
+            clf.fit(X[:], y.ravel())
+            coef_, intercept_= clf.coef_, clf.intercept_
+            for i in range(X.shape[1]): 
+                node.coef_[i]= coef_[i]
             node.intercept_= intercept_
             #print(feature, node_id, node.coef_, node.intercept_)
             return
@@ -1309,8 +1310,8 @@ cdef class Tree:
                     node= &self.nodes[node.left_child]
                 else:
                     node= &self.nodes[node.right_child]
-            coef_, intercept_= node.coef_, node.intercept_
-            proba[i]= (coef_ * X[i, feature]) + intercept_
+            coef_, intercept_= np.array(node.coef_), node.intercept_
+            proba[i]= np.sum(np.array(coef_[:X.shape[1]]) * np.array(X[i])) + intercept_
         return proba
 
 

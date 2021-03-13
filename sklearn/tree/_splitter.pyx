@@ -451,7 +451,7 @@ cdef class BestSplitter(BaseDenseSplitter):
                             if isLinear == 1: 
                                 if current_proxy_improvement > best_proxy_improvement:
                                     best_proxy_improvement = current_proxy_improvement
-                                    decision_best_total_error = 0.98 * current_total_error
+                                    decision_best_total_error = current_total_error
                                     # sum of halves is used to avoid infinite value
                                     current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
 
@@ -463,8 +463,9 @@ cdef class BestSplitter(BaseDenseSplitter):
                                     decisionBest = current  # copy
                                 
                                 if current_error_dif < best_error_dif:
+                                    if current_total_error <= linear_best_total_error:
+                                        best_error_dif = current_error_dif
                                     linear_best_total_error = current_total_error
-                                    best_error_dif = current_error_dif
                                     # sum of halves is used to avoid infinite value
                                     current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
 
@@ -491,14 +492,15 @@ cdef class BestSplitter(BaseDenseSplitter):
                     if linear_best_total_error < decision_best_total_error:
                         if linear_best_total_error < best_total_error:
                             best_total_error= linear_best_total_error
-                            #print("linear Best", linearBest.pos, linearBest.feature)
+                            print("linear Best", linearBest.pos, linearBest.threshold)
                             best = linearBest
                     else:
-                        if decision_best_total_error < best_total_error:
-                            #print("Decision Best", decisionBest.pos, decisionBest.feature)
-                            best_total_error= decision_best_total_error
-                            best= decisionBest
-                    #print(best_total_error, decision_best_total_error, linear_best_total_error)
+                        print("Decision Best", decisionBest.pos, decisionBest.threshold)
+                        best_total_error= decision_best_total_error
+                        best= decisionBest
+                    print(best_total_error, decision_best_total_error, linear_best_total_error)
+
+
         # Reorganize into samples[start:best.pos] + samples[best.pos:end]
         if best.pos < end:
             partition_end = end
@@ -520,7 +522,7 @@ cdef class BestSplitter(BaseDenseSplitter):
             best.improvement = self.criterion.impurity_improvement(
                 impurity, best.impurity_left, best.impurity_right)
 
-        #print(best.feature, best.pos)
+        print(best.feature, best.pos)
         
         # Respect invariant for constant features: the original order of
         # element in features[:n_known_constants] must be preserved for sibling
