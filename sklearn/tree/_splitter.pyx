@@ -338,11 +338,9 @@ cdef class BestSplitter(BaseDenseSplitter):
             current_total_error= +INFINITY
             best_total_error= +INFINITY
             decision_best_total_error= +INFINITY
-            current_error_dif= +INFINITY
-            best_error_dif= +INFINITY
             linear_best_total_error= +INFINITY
+            best_error_dif= +INFINITY
             
-
         while (f_i > n_total_constants and  # Stop early if remaining features
                                             # are constant
                 (n_visited_features < max_features or
@@ -387,10 +385,6 @@ cdef class BestSplitter(BaseDenseSplitter):
 
                 sort(Xf + start, samples + start, end - start)
 
-                for i in range(0, end - start):
-                    x_tmp[i]= Xf[i]
-                    y_tmp[i]= self.y[samples[i]]
-
 
                 if Xf[end - 1] <= Xf[start] + FEATURE_THRESHOLD:
                     features[f_j], features[n_total_constants] = features[n_total_constants], features[f_j]
@@ -431,76 +425,123 @@ cdef class BestSplitter(BaseDenseSplitter):
                             if ((self.criterion.weighted_n_left < min_weight_leaf) or
                                     (self.criterion.weighted_n_right < min_weight_leaf)):
                                 continue
-
-                            #print(isLinear)
-                            if isLinear == 1:
-
-                                clf.fit(x_tmp[: p - start], y_tmp[: p - start].ravel())
-                                y_pred= clf.predict(x_tmp[: p - start])
-                                error_left= mean_squared_error(y_tmp[: p - start].ravel(), y_pred)
-
-                                clf.fit(x_tmp[p - start: end - start], y_tmp[p - start: end - start].ravel())
-                                y_pred= clf.predict(x_tmp[p - start: end - start])
-                                error_right= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
-
-                                current_error_dif= abs(error_left - error_right)
-                                current_total_error= error_left + error_right
                             
                             current_proxy_improvement = self.criterion.proxy_impurity_improvement()
                             
-                            if isLinear == 1: 
-                                if current_proxy_improvement > best_proxy_improvement:
-                                    best_proxy_improvement = current_proxy_improvement
-                                    decision_best_total_error = current_total_error
-                                    # sum of halves is used to avoid infinite value
-                                    current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
+                            if current_proxy_improvement > best_proxy_improvement:
+                                best_proxy_improvement = current_proxy_improvement
+                                # sum of halves is used to avoid infinite value
+                                current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
 
-                                    if ((current.threshold == Xf[p]) or
-                                        (current.threshold == INFINITY) or
-                                        (current.threshold == -INFINITY)):
-                                        current.threshold = Xf[p - 1]
+                                if ((current.threshold == Xf[p]) or
+                                    (current.threshold == INFINITY) or
+                                    (current.threshold == -INFINITY)):
+                                    current.threshold = Xf[p - 1]
 
-                                    decisionBest = current  # copy
-                                
-                                if current_error_dif < best_error_dif:
-                                    if current_total_error <= linear_best_total_error:
-                                        best_error_dif = current_error_dif
-                                    linear_best_total_error = current_total_error
-                                    # sum of halves is used to avoid infinite value
-                                    current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
-
-                                    if ((current.threshold == Xf[p]) or
-                                        (current.threshold == INFINITY) or
-                                        (current.threshold == -INFINITY)):
-                                        current.threshold = Xf[p - 1]
-
-                                    linearBest = current  # copy
-                            else:
-                                if current_proxy_improvement > best_proxy_improvement:
-                                    best_proxy_improvement = current_proxy_improvement
-                                    # sum of halves is used to avoid infinite value
-                                    current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
-
-                                    if ((current.threshold == Xf[p]) or
-                                        (current.threshold == INFINITY) or
-                                        (current.threshold == -INFINITY)):
-                                        current.threshold = Xf[p - 1]
-
-                                    best = current  # copy
-
-                if isLinear == 1:
-                    if linear_best_total_error < decision_best_total_error:
-                        if linear_best_total_error < best_total_error:
-                            best_total_error= linear_best_total_error
-                            print("linear Best", linearBest.pos, linearBest.threshold)
-                            best = linearBest
-                    else:
-                        print("Decision Best", decisionBest.pos, decisionBest.threshold)
-                        best_total_error= decision_best_total_error
-                        best= decisionBest
-                    print(best_total_error, decision_best_total_error, linear_best_total_error)
+                                best = current  # copy
 
 
+        #print(best.feature, best.pos)
+        if isLinear == 1:
+            # f_j in the interval [n_known_constants, f_i - n_found_constants[
+            # f_j += n_found_constants
+            # f_j in the interval [n_total_constants, f_i[
+            current.feature = best.feature
+
+            # Sort samples along that feature; by
+            # copying the values into an array and
+            # sorting the array in a manner which utilizes the cache more
+            # effectively.
+            for i in range(start, end):
+                Xf[i] = self.X[samples[i], current.feature]
+
+            sort(Xf + start, samples + start, end - start)
+
+            for i in range(0, end - start):
+                x_tmp[i]= Xf[i]
+                y_tmp[i]= self.y[samples[i]]
+
+
+            # Evaluate all splits
+            self.criterion.reset()
+            p = start
+
+            while p < end:
+                while (p + 1 < end and
+                        Xf[p + 1] <= Xf[p] + FEATURE_THRESHOLD):
+                    p += 1
+
+                # (p + 1 >= end) or (X[samples[p + 1], current.feature] >
+                #                    X[samples[p], current.feature])
+                p += 1
+                # (p >= end) or (X[samples[p], current.feature] >
+                #                X[samples[p - 1], current.feature])
+
+                if p < end:
+                    current.pos = p
+
+                    # Reject if min_samples_leaf is not guaranteed
+                    if (((current.pos - start) < min_samples_leaf) or
+                            ((end - current.pos) < min_samples_leaf)):
+                        continue
+
+                    self.criterion.update(current.pos)
+
+                    # Reject if min_weight_leaf is not satisfied
+                    if ((self.criterion.weighted_n_left < min_weight_leaf) or
+                            (self.criterion.weighted_n_right < min_weight_leaf)):
+                        continue
+
+
+                    clf.fit(x_tmp[: p - start], y_tmp[: p - start].ravel())
+                    y_pred= clf.predict(x_tmp[: p - start])
+                    error_left= mean_squared_error(y_tmp[: p - start].ravel(), y_pred)
+
+                    clf.fit(x_tmp[p - start: end - start], y_tmp[p - start: end - start].ravel())
+                    y_pred= clf.predict(x_tmp[p - start: end - start])
+                    error_right= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
+
+                    current_error_dif= abs(error_left - error_right)
+                    current_total_error= error_left + error_right
+                    
+                    current_proxy_improvement = self.criterion.proxy_impurity_improvement()
+                    
+                    if current_proxy_improvement > best_proxy_improvement:
+                        if current_total_error < decision_best_total_error:
+                            best_proxy_improvement = current_proxy_improvement
+                        decision_best_total_error = current_total_error
+                        # sum of halves is used to avoid infinite value
+                        current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
+
+                        if ((current.threshold == Xf[p]) or
+                            (current.threshold == INFINITY) or
+                            (current.threshold == -INFINITY)):
+                            current.threshold = Xf[p - 1]
+
+                        decisionBest = current  # copy
+
+                    if current_error_dif < best_error_dif:
+                        if current_total_error < linear_best_total_error:
+                            best_error_dif = current_error_dif
+                        linear_best_total_error = current_total_error
+                        # sum of halves is used to avoid infinite value
+                        current.threshold = Xf[p - 1] / 2.0 + Xf[p] / 2.0
+
+                        if ((current.threshold == Xf[p]) or
+                            (current.threshold == INFINITY) or
+                            (current.threshold == -INFINITY)):
+                            current.threshold = Xf[p - 1]
+
+                        linearBest = current  # copy
+
+            if decision_best_total_error < linear_best_total_error:
+                #print("Decision Best", decisionBest.pos, decisionBest.threshold)
+                best= decisionBest
+            else: 
+                #print("Linearion Best", linearBest.pos, linearBest.threshold)
+                best= linearBest
+            #print(best_total_error, decision_best_total_error)
+        #print (best.feature, best.pos)    
         # Reorganize into samples[start:best.pos] + samples[best.pos:end]
         if best.pos < end:
             partition_end = end
@@ -521,9 +562,6 @@ cdef class BestSplitter(BaseDenseSplitter):
                                              &best.impurity_right)
             best.improvement = self.criterion.impurity_improvement(
                 impurity, best.impurity_left, best.impurity_right)
-
-        print(best.feature, best.pos)
-        
         # Respect invariant for constant features: the original order of
         # element in features[:n_known_constants] must be preserved for sibling
         # and child nodes
