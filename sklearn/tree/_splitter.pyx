@@ -502,7 +502,8 @@ cdef class BestSplitter(BaseDenseSplitter):
                     error_right= mean_squared_error(y_tmp[p - start: end - start].ravel(), y_pred)
 
                     current_error_dif= abs(error_left - error_right)
-                    current_total_error= error_left + error_right
+                    m= end - start
+                    current_total_error= (((p - start)/m) * error_left) + (((end - p)/m) * error_right)
                     
                     current_proxy_improvement = self.criterion.proxy_impurity_improvement()
                     
