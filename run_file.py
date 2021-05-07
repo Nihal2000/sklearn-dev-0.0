@@ -1,8 +1,13 @@
+<<<<<<< HEAD
 # # python -m pip install --verbose --no-build-isolation --editable .
+=======
+# python -m pip install --verbose --no-build-isolation --editable .
+>>>>>>> e9663175df63bca0c059409ef58b78094ce15703
 
 import sys
 import subprocess
 
+<<<<<<< HEAD
 # #
 # #  # implement pip as a subprocess:
 subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--verbose','--no-build-isolation','--editable','.'])
@@ -63,3 +68,22 @@ subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--verbose','--no
 
 # import sklearn
 # print(sklearn)
+=======
+# implement pip as a subprocess:
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--verbose','--no-build-isolation','--editable','.'])
+
+from sklearn.tree import LinearDecisionTreeRegressor
+import numpy as np
+
+inp1 = int(input("Enter number of examples you want:"))
+m = inp1
+np.random.seed(42)
+X = np.random.rand(m, 1)
+y = 4 * (X - 0.5) ** 2
+y = y + np.random.randn(m, 1) / 10
+
+inp2 = int(input("Enter the Depth of the tree:"))
+
+ldtr = LinearDecisionTreeRegressor(max_depth = inp2)
+ldtr.fit(X,y)
+>>>>>>> e9663175df63bca0c059409ef58b78094ce15703
