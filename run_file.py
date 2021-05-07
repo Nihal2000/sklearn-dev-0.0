@@ -61,5 +61,5 @@ subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--verbose','--no
 # plt.scatter(X[:, 2], y_pred1)
 # plt.show()
 
-import sklearn
-print(sklearn)
+# import sklearn
+# print(sklearn)
