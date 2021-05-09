@@ -12,4 +12,6 @@
     from sklearn.tree import LinearDecisionTreeRegressor as LDTR
     ```
 5. If this works, you have successfully built the package and now you are ready to try out LDTR. 
-6. For more details and any errors follow this link: https://scikit-learn.org/stable/developers/advanced_installation.html. This is the official guide on how to build the package.
+6. For more details and any errors follow this link: https://scikit-learn.org/stable/developers/advanced_installation.html. 
+   This is the official guide on how to build the package.
+7. To test the code try one of the following file: test_0.2.ipynb, test_0.3.ipynb
